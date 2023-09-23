@@ -125,10 +125,11 @@ export default class Skynet extends HyperionPlugin {
         const es = server.manager.esIngestClient;
 
         server.get('/v2/skynet/search', async (request: FastifyRequest, reply: FastifyReply) => {
-            const prompt = request.body.prompt;
+            const requestParams = request.body as SkynetAPIRequestSearch;
+            const prompt = '*' + requestParams.prompt + '*';
 
             const { body } = await es.search({
-                index: 'your_index_name',
+                index: 'skynet-action-*',
                 body: {
                     query: {
                         wildcard: {

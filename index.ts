@@ -89,15 +89,14 @@ export default class Skynet extends HyperionPlugin {
 
         server.post('/v2/skynet/search', {schema: searchSchema}, async (request: FastifyRequest, reply: FastifyReply) => {
             const requestParams = request.body as SkynetAPIRequestSearch;
-            const prompt = '*' + requestParams.prompt + '*';
 
             const { body } = await es.search({
                 index: 'skynet-delta-*',
                 body: {
                     query: {
                         wildcard: {
-                            '@skynetRequestMetadata.prompt': {
-                                value: prompt
+                            '@skynetRequestMetadata.params.prompt': {
+                                value: `*${requestParams.prompt}*`
                             }
                         }
                     }

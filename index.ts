@@ -95,9 +95,7 @@ export default class Skynet extends HyperionPlugin {
                 body: {
                     query: {
                         wildcard: {
-                            '@skynetRequestMetadata.params.prompt': {
-                                value: `*${requestParams.prompt}*`
-                            }
+                            '@skynetRequestMetadata.params.prompt.keyword': `*${requestParams.prompt}*`
                         }
                     }
                 }

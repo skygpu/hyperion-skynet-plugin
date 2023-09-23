@@ -124,7 +124,11 @@ export default class Skynet extends HyperionPlugin {
     addRoutes(server: FastifyInstance): void {
         const es = server.manager.esIngestClient;
 
-        server.get('/v2/skynet/search', async (request: FastifyRequest, reply: FastifyReply) => {
+        server.get('/v2/skynet/test', (request,reply) => {
+            reply.send({'test': true});
+        });
+
+        server.post('/v2/skynet/search', async (request: FastifyRequest, reply: FastifyReply) => {
             const requestParams = request.body as SkynetAPIRequestSearch;
             const prompt = '*' + requestParams.prompt + '*';
 

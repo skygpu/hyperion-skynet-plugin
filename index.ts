@@ -41,41 +41,13 @@ export default class Skynet extends HyperionPlugin {
 
     pluginConfig: SkynetConfig;
 
-    requestsInProgress: {};
-
     constructor(config: SkynetConfig) {
         super(config);
         this.debug = config.debug
         if (this.baseConfig) {
             this.pluginConfig = this.baseConfig;
             this.loadDeltaHandlers();
-            this.loadActionHandlers();
         }
-    }
-
-    handleQueueDelta(delta: HyperionDelta) {
-        const data = delta.data;
-        const hashStr = data.nonce + data.body + data.binary_data
-        const requestHash = crypto.createHash('sha256')
-            .update(hashStr)
-            .digest('hex')
-            .toUpperCase();
-
-        delta['@skynetRequestHash'] = requestHash;
-
-        this.requestsInProgress[requestHash] = delta.data;
-    }
-
-    handleSubmitAction(action: HyperionAction) {
-        const requestHash = action.act.data.request_hash;
-        const requestData = this.requestsInProgress[requestHash]
-        const reqBody = JSON.parse(requestData.body);
-        action['@skynetRequestMetadata'] = {
-            ...this.requestsInProgress[requestHash],
-            ...reqBody.params
-
-        };
-        this.cleanupRequests(requestHash);
     }
 
     loadDeltaHandlers() {
@@ -87,42 +59,18 @@ export default class Skynet extends HyperionPlugin {
                     "@skynetRequestHash": {"type": "keyword"}
                 }
             },
-            handler: this.handleQueueDelta.bind(this)
+            handler: (delta: HyperionDelta) => {
+                const data = delta.data;
+                const hashStr = data.nonce + data.body + data.binary_data
+                const requestHash = crypto.createHash('sha256')
+                    .update(hashStr)
+                    .digest('hex')
+                    .toUpperCase();
+
+                delta['@skynetRequestMetadata'] = JSON.parse(data.body);
+                delta['@skynetRequestHash'] = requestHash;
+            }
         });
-    }
-
-    loadActionHandlers() {
-        this.actionHandlers.push({
-            action: 'submit',
-            contract: this.pluginConfig.contract,
-            mappings: {
-                action: {
-                    "@skynetRequestMetadata": {
-                        "properties": {
-                            "id": {"type": "keyword"},
-                            "min_verification": {"type": "byte"},
-                            "nonce": {"type": "long"},
-                            "reward": {"type": "keyword"},
-                            "timestamp": {"type": "keyword"},
-                            "user": {"type": "keyword"},
-                            "prompt": {"type": "keyword"},
-                            "model": {"type": "keyword"},
-                            "width": {"type": "keyword"},
-                            "height": {"type": "keyword"}
-                        }
-                    }
-                }
-            },
-            handler: this.handleSubmitAction.bind(this)
-        });
-    }
-
-    cleanupRequests(hash: string) {
-        delete this.requestsInProgress[hash];
-
-        for (const h in this.requestsInProgress)
-            if (isOlderThanADay(this.requestsInProgress[h]))
-                delete this.requestsInProgress[h];
     }
 
     addRoutes(server: FastifyInstance): void {
@@ -144,7 +92,7 @@ export default class Skynet extends HyperionPlugin {
             const prompt = '*' + requestParams.prompt + '*';
 
             const { body } = await es.search({
-                index: 'skynet-action-*',
+                index: 'skynet-delta-*',
                 body: {
                     query: {
                         wildcard: {

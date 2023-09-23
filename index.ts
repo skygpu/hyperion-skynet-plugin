@@ -53,6 +53,31 @@ export default class Skynet extends HyperionPlugin {
         }
     }
 
+    handleQueueDelta(delta: HyperionDelta) {
+        const data = delta.data;
+        const hashStr = data.nonce + data.body + data.binary_data
+        const requestHash = crypto.createHash('sha256')
+            .update(hashStr)
+            .digest('hex')
+            .toUpperCase();
+
+        delta['@skynetRequestHash'] = requestHash;
+
+        this.requestsInProgress[requestHash] = delta.data;
+    }
+
+    handleSubmitAction(action: HyperionAction) {
+        const requestHash = action.act.data.request_hash;
+        const requestData = this.requestsInProgress[requestHash]
+        const reqBody = JSON.parse(requestData.body);
+        action['@skynetRequestMetadata'] = {
+            ...this.requestsInProgress[requestHash],
+            ...reqBody.params
+
+        };
+        this.cleanupRequests(requestHash);
+    }
+
     loadDeltaHandlers() {
         this.deltaHandlers.push({
             table: 'queue',
@@ -62,18 +87,7 @@ export default class Skynet extends HyperionPlugin {
                     "@skynetRequestHash": {"type": "keyword"}
                 }
             },
-            handler: async (delta: HyperionDelta) => {
-                const data = delta.data;
-                const hashStr = data.nonce + data.body + data.binary_data
-                const requestHash = crypto.createHash('sha256')
-                    .update(hashStr)
-                    .digest('hex')
-                    .toUpperCase();
-
-                delta['@skynetRequestHash'] = requestHash;
-
-                this.requestsInProgress[requestHash] = delta.data;
-            }
+            handler: this.handleQueueDelta.bind(this)
         });
     }
 
@@ -99,17 +113,7 @@ export default class Skynet extends HyperionPlugin {
                     }
                 }
             },
-            handler: (action: HyperionAction) => {
-                const requestHash = action.act.data.request_hash;
-                const requestData = this.requestsInProgress[requestHash]
-                const reqBody = JSON.parse(requestData.body);
-                action['@skynetRequestMetadata'] = {
-                    ...this.requestsInProgress[requestHash],
-                    ...reqBody.params
-
-                };
-                this.cleanupRequests(requestHash);
-            }
+            handler: this.handleSubmitAction.bind(this)
         });
     }
 

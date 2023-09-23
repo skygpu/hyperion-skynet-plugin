@@ -151,8 +151,7 @@ export default class Skynet extends HyperionPlugin {
                     }
                 }
             });
-
-            reply.send(body.hits.hits);
+            reply.send(body.hits);
         });
 
     }

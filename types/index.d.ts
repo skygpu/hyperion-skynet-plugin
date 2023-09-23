@@ -6,4 +6,4 @@ export interface SkynetConfig {
 export interface SkynetAPIRequestSearch {
     prompt?: string;
     model?: string;
-};
+}

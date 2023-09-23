@@ -6,7 +6,7 @@ import {join} from "path";
 import {HyperionAction} from "../../../interfaces/hyperion-action";
 import {HyperionDelta} from "../../../interfaces/hyperion-delta";
 import crypto from 'crypto';
-import {SkynetConfig} from './types/index';
+import {SkynetConfig, SkynetAPIRequestSearch} from './types/index';
 
 import {
     Action,

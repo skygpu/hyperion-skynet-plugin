@@ -6,7 +6,11 @@ import {join} from "path";
 import {HyperionAction} from "../../../interfaces/hyperion-action";
 import {HyperionDelta} from "../../../interfaces/hyperion-delta";
 import crypto from 'crypto';
-import {SkynetConfig, SkynetAPIRequestSearch} from './types/index';
+import {
+    SkynetConfig,
+    SkynetAPIRequestSearch,
+    SkynetAPIRequestGetMetadata
+} from './types/index';
 
 import {
     Action,
@@ -94,6 +98,16 @@ export default class Skynet extends HyperionPlugin {
     addRoutes(server: FastifyInstance): void {
         const es = server.manager.esIngestClient;
 
+        const getMetadataSchema = {
+            body: {
+                type: 'object',
+                properties: {
+                    cid: { type: 'string' }
+                },
+                required: ["cid"]
+            }
+        };
+
         const searchSchema = {
             body: {
                 type: 'object',
@@ -104,6 +118,49 @@ export default class Skynet extends HyperionPlugin {
                 required: []
             }
         };
+
+        server.post('/v2/skynet/get_metadata', {schema: getMetadataSchema}, async (request: FastifyRequest, reply: FastifyReply) => {
+            const requestParams = request.body as SkynetAPIRequestGetMetadata;
+
+            this.logDebug(`searching submit with cid ${requestParams.cid}`);
+            const submitSearch = await es.search({
+                index: 'skynet-action-*',
+                body: {
+                    query: {
+                        match: {
+                            '@skynetIPFSCID': requestParams.cid
+                        }
+                    }
+                }
+            });
+            if (submitSearch.body.hits.total.value == 0)
+                return {};
+
+            const submit = submitSearch.body.hits.hits[0]['_source'];
+            const requestHash = submit['@skynetRequestHash'];
+
+            const requestSearch = await es.search({
+                index: 'skynet-delta-*',
+                body: {
+                    query: {
+                        match: {
+                            '@skynetRequestHash': requestHash
+                        }
+                    }
+                }
+            });
+            if (requestSearch.body.hits.total.value == 0)
+                return {};
+
+            const requestDoc = requestSearch.body.hits.hits[0]['_source'];
+
+            reply.send({
+                requestTimestamp: requestDoc['@timestamp'],
+                submitTimestamp: submit['@timestamp'],
+                submitID: submit.trx_id,
+                ...requestDoc['@skynetRequestMetadata']
+            });
+        });
 
         server.post('/v2/skynet/search', {schema: searchSchema}, async (request: FastifyRequest, reply: FastifyReply) => {
             const requestParams = request.body as SkynetAPIRequestSearch;

@@ -90,6 +90,7 @@ export default class Skynet extends HyperionPlugin {
         server.post('/v2/skynet/search', {schema: searchSchema}, async (request: FastifyRequest, reply: FastifyReply) => {
             const requestParams = request.body as SkynetAPIRequestSearch;
 
+            this.logDebug(`searching with params ${JSON.stringify(requestParams)}`);
             const requestSearch = await es.search({
                 index: 'skynet-delta-*',
                 body: {
@@ -100,6 +101,11 @@ export default class Skynet extends HyperionPlugin {
                     }
                 }
             });
+            this.logDebug(`got ${requestSearch.body.hits.total.value} hits.`);
+            if (requestSearch.body.hits.total.value == 0) {
+                reply.send([]);
+                return;
+            }
 
             const requestHashes = requestSearch.body.hits.hits.map(hit => hit['@skynetRequestHash']);
             const requests = requestSearch.body.hits.hits.reduce((acc, req) => {
@@ -107,8 +113,11 @@ export default class Skynet extends HyperionPlugin {
                 return acc;
             }, {});
 
+            this.logDebug(JSON.stringify(requests, null, 4));
+
             const matchingSubmits = {};
             for (const hash of requestHashes) {
+                this.logDebug(`searching submits for ${hash}...`);
                 const submitSearch = await es.search({
                     index: 'skynet-action-*',
                     body: {
@@ -119,6 +128,7 @@ export default class Skynet extends HyperionPlugin {
                         }
                     }
                 });
+                this.logDebug(`got ${submitSearch.body.total}`);
                 if (submitSearch.body.total.value > 0)
                     matchingSubmits[hash] = submitSearch.body.hits.hits[0]
             }

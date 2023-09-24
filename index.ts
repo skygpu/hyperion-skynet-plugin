@@ -80,11 +80,13 @@ export default class Skynet extends HyperionPlugin {
             contract: this.pluginConfig.contract,
             mappings: {
                 action: {
-                    "@skynetRequestHash": {"type": "keyword"}
+                    "@skynetRequestHash": {"type": "keyword"},
+                    "@skynetIPFSCID": {"type": "keyword"}
                 }
             },
             handler: (action: HyperionAction) => {
                 action['@skynetRequestHash'] = action.act.data.request_hash;
+                action['@skynetIPFSCID'] = action.act.data.ipfs_hash;
             }
         });
     }

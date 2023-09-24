@@ -47,6 +47,7 @@ export default class Skynet extends HyperionPlugin {
         if (this.baseConfig) {
             this.pluginConfig = this.baseConfig;
             this.loadDeltaHandlers();
+            this.loadActionHandlers();
         }
     }
 
@@ -69,6 +70,21 @@ export default class Skynet extends HyperionPlugin {
 
                 delta['@skynetRequestMetadata'] = JSON.parse(data.body);
                 delta['@skynetRequestHash'] = requestHash;
+            }
+        });
+    }
+
+    loadActionHandlers() {
+        this.actionHandlers.push({
+            action: 'submit',
+            contract: this.pluginConfig.contract,
+            mappings: {
+                action: {
+                    "@skynetRequestHash": {"type": "keyword"}
+                }
+            },
+            handler: (action: HyperionAction) => {
+                action['@skynetRequestHash'] = action.act.data.request_hash;
             }
         });
     }
@@ -107,9 +123,9 @@ export default class Skynet extends HyperionPlugin {
                 return;
             }
 
-            const requestHashes = requestSearch.body.hits.hits.map(hit => hit['@skynetRequestHash']);
+            const requestHashes = requestSearch.body.hits.hits.map(hit => hit['_source']['@skynetRequestHash']);
             const requests = requestSearch.body.hits.hits.reduce((acc, req) => {
-                acc[req['@skynetRequestHash']] = req['@skynetRequestMetadata']
+                acc[req['_source']['@skynetRequestHash']] = req['_source']['@skynetRequestMetadata'];
                 return acc;
             }, {});
 
@@ -123,19 +139,19 @@ export default class Skynet extends HyperionPlugin {
                     body: {
                         query: {
                             match: {
-                                'act.data.request_hash': hash
+                                '@skynetRequestHash': hash
                             }
                         }
                     }
                 });
-                this.logDebug(`got ${submitSearch.body.total}`);
-                if (submitSearch.body.total.value > 0)
-                    matchingSubmits[hash] = submitSearch.body.hits.hits[0]
+                this.logDebug(`got ${submitSearch.body.hits.total.value}`);
+                if (submitSearch.body.hits.total.value > 0)
+                    matchingSubmits[hash] = submitSearch.body.hits.hits[0]['_source'];
             }
 
             const results = [];
             for (const hash in matchingSubmits) {
-                const submit = matchingSubmits[hash]['_source'];
+                const submit = matchingSubmits[hash]
                 const metadata = requests[hash];
                 results.push({
                     timestamp: submit['@timestamp'],

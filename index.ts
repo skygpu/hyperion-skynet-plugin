@@ -165,9 +165,14 @@ export default class Skynet extends HyperionPlugin {
         server.post('/v2/skynet/search', {schema: searchSchema}, async (request: FastifyRequest, reply: FastifyReply) => {
             const requestParams = request.body as SkynetAPIRequestSearch;
 
+            let size = 10;
+            if (requestParams.size)
+                size = requestParams.size;
+
             this.logDebug(`searching with params ${JSON.stringify(requestParams)}`);
             const requestSearch = await es.search({
                 index: `${this.pluginConfig.deltaIndex}-*`,
+                size: size,
                 body: {
                     query: {
                         wildcard: {

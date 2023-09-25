@@ -7,7 +7,7 @@ export interface SkynetConfig {
 
 export interface SkynetAPIRequestSearch {
     prompt?: string;
-    model?: string;
+    size?: number;
 }
 
 export interface SkynetAPIRequestGetMetadata {

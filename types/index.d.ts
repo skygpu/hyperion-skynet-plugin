@@ -1,6 +1,8 @@
 export interface SkynetConfig {
     debug: boolean;
     contract: string;
+    actionIndex: string;
+    deltaIndex: string;
 }
 
 export interface SkynetAPIRequestSearch {

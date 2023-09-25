@@ -124,7 +124,7 @@ export default class Skynet extends HyperionPlugin {
 
             this.logDebug(`searching submit with cid ${requestParams.cid}`);
             const submitSearch = await es.search({
-                index: 'skynet-action-*',
+                index: `${this.pluginConfig.actionIndex}-*`,
                 body: {
                     query: {
                         match: {
@@ -140,7 +140,7 @@ export default class Skynet extends HyperionPlugin {
             const requestHash = submit['@skynetRequestHash'];
 
             const requestSearch = await es.search({
-                index: 'skynet-delta-*',
+                index: `${this.pluginConfig.deltaIndex}-*`,
                 body: {
                     query: {
                         match: {
@@ -167,7 +167,7 @@ export default class Skynet extends HyperionPlugin {
 
             this.logDebug(`searching with params ${JSON.stringify(requestParams)}`);
             const requestSearch = await es.search({
-                index: 'skynet-delta-*',
+                index: `${this.pluginConfig.deltaIndex}-*`,
                 body: {
                     query: {
                         wildcard: {
@@ -194,7 +194,7 @@ export default class Skynet extends HyperionPlugin {
             for (const hash of requestHashes) {
                 this.logDebug(`searching submits for ${hash}...`);
                 const submitSearch = await es.search({
-                    index: 'skynet-action-*',
+                    index: `${this.pluginConfig.actionIndex}-*`,
                     body: {
                         query: {
                             match: {

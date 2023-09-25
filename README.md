@@ -17,6 +17,8 @@ Required plugin config on chain.config.json
     "skynet-gpu": {
       "debug": false,
       "contract": "telos.gpu",
+      "actionIndex": "skynet-action",
+      "deltaIndex": skynet-delta"
     }
   }
 }

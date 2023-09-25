@@ -113,9 +113,9 @@ export default class Skynet extends HyperionPlugin {
                 type: 'object',
                 properties: {
                     prompt: { type: 'string' },
-                    model: { type: 'string' },
+                    size: { type: 'number' },
                 },
-                required: []
+                required: ['prompt']
             }
         };
 
